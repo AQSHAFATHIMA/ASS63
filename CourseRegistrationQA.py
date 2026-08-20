@@ -35,7 +35,7 @@ def test_missing_prerequisite():
         8
     )
 
-    assert "Missing prerequisite" in result
+    assert result == "Missing prerequisite"
 
     print("Missing prerequisite: PASS")
 
@@ -62,7 +62,7 @@ def test_timetable_conflict():
 
     system = CourseRegistration()
 
-    # DBMS = 9-10
+    # First register DBMS at 9-10
     system.register(
         "S4",
         "CSE",
@@ -72,10 +72,9 @@ def test_timetable_conflict():
         8
     )
 
-    # ML also uses 9-10,
-    # but ML belongs to semester 3.
-    # Test conflict separately by
-    # modifying semester for this test.
+    # Change ML semester only for this
+    # test so its 9-10 timetable can
+    # be checked against DBMS.
     system.courses["ML"]["semester"] = 2
 
     result = system.register(
@@ -87,7 +86,7 @@ def test_timetable_conflict():
         8
     )
 
-    assert "Timetable conflict" in result
+    assert result == "Timetable conflict"
 
     print("Timetable conflict: PASS")
 
@@ -107,7 +106,7 @@ def test_full_course():
         8
     )
 
-    assert "Course is full" in result
+    assert result == "Course is full"
 
     print("Full course: PASS")
 
@@ -134,7 +133,7 @@ def test_duplicate_registration():
         8
     )
 
-    assert "Duplicate registration" in result
+    assert result == "Duplicate registration"
 
     print("Duplicate registration: PASS")
 
@@ -152,7 +151,7 @@ def test_invalid_course():
         8
     )
 
-    assert "Invalid course" in result
+    assert result == "Invalid course"
 
     print("Invalid course: PASS")
 
@@ -170,7 +169,7 @@ def test_semester_restriction():
         8
     )
 
-    assert "Semester restriction" in result
+    assert result == "Semester restriction"
 
     print("Semester restriction: PASS")
 
@@ -192,8 +191,6 @@ def test_boundary_credit():
 
     print("Boundary credit values: PASS")
 
-
-# ---------------- RUN ALL TESTS ----------------
 
 print("===== COURSE REGISTRATION QA =====")
 
