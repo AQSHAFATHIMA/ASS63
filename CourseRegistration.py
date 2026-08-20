@@ -1,6 +1,7 @@
 class CourseRegistration:
 
     def __init__(self):
+
         self.courses = {
             "DBMS": {
                 "credits": 4,
@@ -35,9 +36,8 @@ class CourseRegistration:
             }
         }
 
-        self.registrations = {}
+        self.registered = {}
 
-    # Register student
     def register(
         self,
         student_id,
@@ -48,151 +48,100 @@ class CourseRegistration:
         max_credits
     ):
 
-        if student_id not in self.registrations:
-            self.registrations[student_id] = []
+        if student_id not in self.registered:
+            self.registered[student_id] = []
 
-        registered = self.registrations[student_id]
+        current = self.registered[student_id]
 
-        # Check every selected course
+        # Check each selected course
         for course in selected_courses:
 
             # Invalid course
             if course not in self.courses:
-                return "Invalid course: " + course
+                return "Invalid course"
 
             info = self.courses[course]
 
             # Semester restriction
             if semester != info["semester"]:
-                return "Semester restriction: " + course
+                return "Semester restriction"
 
             # Duplicate registration
-            if course in registered:
-                return "Duplicate registration: " + course
+            if course in current:
+                return "Duplicate registration"
 
-            # Prerequisite verification
+            # Prerequisite
             if info["prerequisite"] not in completed_courses:
-                return (
-                    "Missing prerequisite for " +
-                    course
-                )
+                return "Missing prerequisite"
 
             # Course capacity
             if info["capacity"] <= 0:
-                return "Course is full: " + course
+                return "Course is full"
 
-        # Calculate selected credits
-        selected_credits = 0
+        # Calculate credits
+        total = sum(
+            self.courses[c]["credits"]
+            for c in current
+        )
 
         for course in selected_courses:
-            selected_credits += \
-                self.courses[course]["credits"]
-
-        # Existing credits
-        existing_credits = 0
-
-        for course in registered:
-            existing_credits += \
-                self.courses[course]["credits"]
-
-        total_credits = \
-            existing_credits + selected_credits
+            total += self.courses[course]["credits"]
 
         # Credit limit
-        if total_credits > max_credits:
+        if total > max_credits:
             return "Credit limit exceeded"
 
-        # Timetable conflict
-        times = []
-
-        for course in registered:
-            times.append(
-                self.courses[course]["time"]
-            )
+        # Timetable clash
+        times = [
+            self.courses[c]["time"]
+            for c in current
+        ]
 
         for course in selected_courses:
 
             if self.courses[course]["time"] in times:
-                return (
-                    "Timetable conflict: " +
-                    course
-                )
+                return "Timetable conflict"
 
             times.append(
                 self.courses[course]["time"]
             )
 
-        # Registration successful
+        # Register courses
         for course in selected_courses:
 
-            registered.append(course)
+            current.append(course)
 
             self.courses[course]["capacity"] -= 1
 
         return {
             "status": "Registration successful",
-            "courses": registered,
-            "total_credits": total_credits
+            "courses": current,
+            "total_credits": total
         }
 
-    # Get total registered credits
     def total_credits(self, student_id):
 
-        if student_id not in self.registrations:
+        if student_id not in self.registered:
             return 0
 
-        total = 0
-
-        for course in self.registrations[student_id]:
-            total += self.courses[course]["credits"]
-
-        return total
+        return sum(
+            self.courses[c]["credits"]
+            for c in self.registered[student_id]
+        )
 
 
-# ---------------- MAIN PROGRAM ----------------
+# Jenkins-friendly demonstration
+if __name__ == "__main__":
 
-system = CourseRegistration()
+    system = CourseRegistration()
 
-print("===== UNIVERSITY COURSE REGISTRATION =====")
+    result = system.register(
+        "S101",
+        "CSE",
+        2,
+        ["Programming", "Data Structures"],
+        ["DBMS"],
+        8
+    )
 
-student_id = input("Student ID: ")
-program = input("Program: ")
-semester = int(input("Semester: "))
-
-completed = input(
-    "Completed courses (space separated): "
-).split()
-
-selected = input(
-    "Courses to register (space separated): "
-).split()
-
-max_credits = int(
-    input("Maximum credit limit: ")
-)
-
-result = system.register(
-    student_id,
-    program,
-    semester,
-    completed,
-    selected,
-    max_credits
-)
-
-print()
-
-if isinstance(result, str):
-
-    print("Registration failed:")
     print(result)
-
-else:
-
-    print(result["status"])
-
-    print("Registered courses:",
-          result["courses"])
-
-    print("Total registered credits:",
-          result["total_credits"])
