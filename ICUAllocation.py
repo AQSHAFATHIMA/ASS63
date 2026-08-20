@@ -3,7 +3,6 @@ class ICUAllocation:
     def __init__(self):
         self.patients = []
 
-    # Add patient
     def add_patient(
         self,
         patient_id,
@@ -12,30 +11,29 @@ class ICUAllocation:
         heart_rate,
         blood_pressure,
         temperature,
-        condition,
+        medical_condition,
         emergency
     ):
 
         # Duplicate patient ID
-        for patient in self.patients:
-            if patient["id"] == patient_id:
+        for p in self.patients:
+            if p["id"] == patient_id:
                 return "Duplicate patient ID"
 
-        # Oxygen validation
+        # Validation
+        if age <= 0:
+            return "Invalid age"
+
         if oxygen < 0 or oxygen > 100:
             return "Invalid oxygen level"
 
-        # Heart-rate validation
         if heart_rate <= 0:
             return "Invalid heart rate"
-
-        if age <= 0:
-            return "Invalid age"
 
         if blood_pressure <= 0:
             return "Invalid blood pressure"
 
-        # Calculate priority score
+        # Priority score
         score = 0
 
         if oxygen < 90:
@@ -54,7 +52,7 @@ class ICUAllocation:
         if temperature > 39:
             score += 10
 
-        if condition.lower() == "yes":
+        if medical_condition.lower() == "yes":
             score += 10
 
         # Emergency override
@@ -69,150 +67,94 @@ class ICUAllocation:
         else:
             priority = "LOW"
 
-        self.patients.append({
+        patient = {
             "id": patient_id,
             "age": age,
             "oxygen": oxygen,
             "heart_rate": heart_rate,
             "blood_pressure": blood_pressure,
             "temperature": temperature,
-            "condition": condition,
+            "condition": medical_condition,
             "emergency": emergency,
             "score": score,
             "priority": priority,
-            "allocated": False
-        })
-
-        return {
-            "message": "Patient added",
-            "score": score,
-            "priority": priority
+            "bed": False
         }
 
-    # Allocate ICU beds
+        self.patients.append(patient)
+
+        return patient
+
     def allocate_beds(self, beds):
 
         if beds < 0:
-            return "Invalid number of beds"
+            return "Invalid bed count"
 
         if beds == 0:
-            for patient in self.patients:
-                patient["allocated"] = False
+            return {
+                "allocated": [],
+                "waiting": [
+                    p["id"] for p in self.patients
+                ]
+            }
 
-            return "No ICU beds - Waiting list"
-
-        # Emergency cases first, then priority
-        priority_order = {
+        priority_value = {
             "CRITICAL": 4,
             "HIGH": 3,
             "MEDIUM": 2,
             "LOW": 1
         }
 
+        # Emergency patients first,
+        # then priority
         self.patients.sort(
             key=lambda p: (
                 p["emergency"].lower() == "yes",
-                priority_order[p["priority"]]
+                priority_value[p["priority"]]
             ),
             reverse=True
         )
 
-        result = []
+        allocated = []
+        waiting = []
 
         for i, patient in enumerate(self.patients):
 
             if i < beds:
-
-                patient["allocated"] = True
-
-                result.append(
-                    patient["id"] +
-                    " -> ICU BED (" +
-                    patient["priority"] +
-                    ")"
-                )
+                patient["bed"] = True
+                allocated.append(patient["id"])
 
             else:
+                patient["bed"] = False
+                waiting.append(patient["id"])
 
-                patient["allocated"] = False
-
-                result.append(
-                    patient["id"] +
-                    " -> WAITING LIST"
-                )
-
-        return result
-
-    # Waiting list
-    def waiting_list(self):
-
-        return [
-            p["id"]
-            for p in self.patients
-            if not p["allocated"]
-        ]
-
-    # Get patient
-    def get_patient(self, patient_id):
-
-        for patient in self.patients:
-            if patient["id"] == patient_id:
-                return patient
-
-        return None
+        return {
+            "allocated": allocated,
+            "waiting": waiting
+        }
 
 
-# ---------------- MAIN PROGRAM ----------------
+# No input() — Jenkins-friendly demonstration
+if __name__ == "__main__":
 
-icu = ICUAllocation()
+    icu = ICUAllocation()
 
-print("===== ICU RESOURCE ALLOCATION =====")
+    patient = icu.add_patient(
+        "P101",
+        65,
+        85,
+        130,
+        85,
+        39.5,
+        "yes",
+        "no"
+    )
 
-patient_id = input("Patient ID: ")
-age = int(input("Age: "))
-oxygen = float(input("Oxygen level: "))
-heart_rate = int(input("Heart rate: "))
-blood_pressure = int(input("Blood pressure: "))
-temperature = float(input("Temperature: "))
-condition = input("Existing medical condition (yes/no): ")
-emergency = input("Emergency case (yes/no): ")
-beds = int(input("Available ICU beds: "))
+    print("Patient:", patient["id"])
+    print("Priority score:", patient["score"])
+    print("Priority:", patient["priority"])
 
-result = icu.add_patient(
-    patient_id,
-    age,
-    oxygen,
-    heart_rate,
-    blood_pressure,
-    temperature,
-    condition,
-    emergency
-)
+    result = icu.allocate_beds(1)
 
-if isinstance(result, str):
-
-    print(result)
-
-else:
-
-    print("\nPriority Score:",
-          result["score"])
-
-    print("Priority:",
-          result["priority"])
-
-    allocation = icu.allocate_beds(beds)
-
-    print("\n===== ICU ALLOCATION =====")
-
-    if isinstance(allocation, str):
-
-        print(allocation)
-
-    else:
-
-        for item in allocation:
-            print(item)
-
-        print("\nWaiting List:",
-              icu.waiting_list())
+    print("Allocated:", result["allocated"])
+    print("Waiting:", result["waiting"])
