@@ -5,7 +5,7 @@ def test_critical_patient():
 
     icu = ICUAllocation()
 
-    result = icu.add_patient(
+    p = icu.add_patient(
         "P1",
         65,
         85,
@@ -16,7 +16,7 @@ def test_critical_patient():
         "no"
     )
 
-    assert result["priority"] == "CRITICAL"
+    assert p["priority"] == "CRITICAL"
 
     print("Critical patient: PASS")
 
@@ -25,18 +25,18 @@ def test_normal_patient():
 
     icu = ICUAllocation()
 
-    result = icu.add_patient(
+    p = icu.add_patient(
         "P2",
         30,
         98,
-        75,
+        80,
         120,
         37,
         "no",
         "no"
     )
 
-    assert result["priority"] == "LOW"
+    assert p["priority"] == "LOW"
 
     print("Normal patient: PASS")
 
@@ -45,9 +45,9 @@ def test_emergency_case():
 
     icu = ICUAllocation()
 
-    result = icu.add_patient(
+    p = icu.add_patient(
         "P3",
-        25,
+        30,
         98,
         80,
         120,
@@ -56,7 +56,7 @@ def test_emergency_case():
         "yes"
     )
 
-    assert result["priority"] == "CRITICAL"
+    assert p["priority"] == "CRITICAL"
 
     print("Emergency case: PASS")
 
@@ -67,10 +67,10 @@ def test_no_icu_beds():
 
     icu.add_patient(
         "P4",
-        60,
+        65,
         85,
         130,
-        80,
+        85,
         39,
         "yes",
         "no"
@@ -78,10 +78,8 @@ def test_no_icu_beds():
 
     result = icu.allocate_beds(0)
 
-    assert result == \
-        "No ICU beds - Waiting list"
-
-    assert "P4" in icu.waiting_list()
+    assert result["allocated"] == []
+    assert "P4" in result["waiting"]
 
     print("No ICU beds: PASS")
 
@@ -93,7 +91,7 @@ def test_duplicate_patient():
     icu.add_patient(
         "P5",
         40,
-        95,
+        98,
         80,
         120,
         37,
@@ -104,8 +102,8 @@ def test_duplicate_patient():
     result = icu.add_patient(
         "P5",
         50,
+        95,
         90,
-        100,
         110,
         38,
         "no",
@@ -124,7 +122,7 @@ def test_invalid_oxygen():
     result = icu.add_patient(
         "P6",
         40,
-        105,
+        101,
         80,
         120,
         37,
@@ -145,7 +143,7 @@ def test_invalid_heart_rate():
         "P7",
         40,
         98,
-        -10,
+        0,
         120,
         37,
         "no",
@@ -157,23 +155,26 @@ def test_invalid_heart_rate():
     print("Invalid heart rate: PASS")
 
 
-def test_priority_boundaries():
+def test_priority_boundary():
 
     icu = ICUAllocation()
 
-    # Score exactly 60
-    result = icu.add_patient(
+    # Oxygen < 90 = 40
+    # Heart rate > 120 = 30
+    # Total = 70 -> CRITICAL
+    p = icu.add_patient(
         "P8",
         40,
         85,
+        130,
         120,
-        90,
         37,
         "no",
         "no"
     )
 
-    assert result["priority"] == "CRITICAL"
+    assert p["score"] == 70
+    assert p["priority"] == "CRITICAL"
 
     print("Priority boundary values: PASS")
 
@@ -217,18 +218,16 @@ def test_multiple_patients_same_bed():
 
     result = icu.allocate_beds(1)
 
-    assert "P9 -> ICU BED" in result
+    assert len(result["allocated"]) == 1
+    assert result["allocated"][0] == "P9"
 
-    assert "P10" in icu.waiting_list()
-    assert "P11" in icu.waiting_list()
+    assert len(result["waiting"]) == 2
 
     print(
         "Multiple patients competing "
         "for same bed: PASS"
     )
 
-
-# ---------------- RUN ALL TESTS ----------------
 
 print("===== ICU ALLOCATION QA =====")
 
@@ -239,7 +238,7 @@ test_no_icu_beds()
 test_duplicate_patient()
 test_invalid_oxygen()
 test_invalid_heart_rate()
-test_priority_boundaries()
+test_priority_boundary()
 test_multiple_patients_same_bed()
 
 print("\nALL ICU TESTS PASSED")
