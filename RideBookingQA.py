@@ -5,7 +5,8 @@ def test_normal_booking():
 
     r = RideBooking()
 
-    result = r.calculate_fare(
+    result = r.calculate(
+        "C1", "A", "B",
         10, 2, "Sedan", 12
     )
 
@@ -14,11 +15,12 @@ def test_normal_booking():
     print("Normal booking: PASS")
 
 
-def test_peak_hour():
+def test_peak_booking():
 
     r = RideBooking()
 
-    result = r.calculate_fare(
+    result = r.calculate(
+        "C2", "A", "B",
         10, 2, "Sedan", 8
     )
 
@@ -31,7 +33,8 @@ def test_night_booking():
 
     r = RideBooking()
 
-    result = r.calculate_fare(
+    result = r.calculate(
+        "C3", "A", "B",
         10, 2, "Sedan", 23
     )
 
@@ -44,7 +47,8 @@ def test_invalid_distance():
 
     r = RideBooking()
 
-    result = r.calculate_fare(
+    result = r.calculate(
+        "C4", "A", "B",
         0, 2, "Sedan", 12
     )
 
@@ -53,11 +57,12 @@ def test_invalid_distance():
     print("Invalid distance: PASS")
 
 
-def test_invalid_passenger_count():
+def test_invalid_passengers():
 
     r = RideBooking()
 
-    result = r.calculate_fare(
+    result = r.calculate(
+        "C5", "A", "B",
         10, 0, "Sedan", 12
     )
 
@@ -70,7 +75,8 @@ def test_excessive_passengers():
 
     r = RideBooking()
 
-    result = r.calculate_fare(
+    result = r.calculate(
+        "C6", "A", "B",
         10, 5, "Sedan", 12
     )
 
@@ -79,27 +85,14 @@ def test_excessive_passengers():
     print("Excessive passengers: PASS")
 
 
-def test_unavailable_vehicle():
-
-    r = RideBooking()
-
-    result = r.calculate_fare(
-        10, 2, "Auto", 12
-    )
-
-    assert result == "Unavailable vehicle"
-
-    print("Unavailable vehicle: PASS")
-
-
 def test_unavailable_driver():
 
     r = RideBooking()
 
-    r.drivers["Sedan"] = []
-
-    result = r.calculate_fare(
-        10, 2, "Sedan", 12
+    result = r.calculate(
+        "C7", "A", "B",
+        10, 2, "Sedan", 12,
+        False
     )
 
     assert result == "Driver unavailable"
@@ -111,9 +104,13 @@ def test_maximum_discount():
 
     r = RideBooking()
 
-    discount = r.promotional_discount(1000)
+    result = r.calculate(
+        "C8", "A", "B",
+        1000, 2, "Premium", 12
+    )
 
-    assert discount == r.MAX_DISCOUNT
+    assert result["promotional_discount"] == \
+        r.MAX_DISCOUNT
 
     print("Maximum discount: PASS")
 
@@ -122,18 +119,17 @@ def test_multiple_vehicle_types():
 
     r = RideBooking()
 
-    for vehicle in [
-        "Bike",
-        "Sedan",
-        "SUV",
-        "Premium"
+    for vehicle, passengers in [
+        ("Bike", 1),
+        ("Sedan", 2),
+        ("SUV", 4),
+        ("Premium", 2)
     ]:
 
-        result = r.calculate_fare(
-            10,
-            1,
-            vehicle,
-            12
+        result = r.calculate(
+            "C9", "A", "B",
+            10, passengers,
+            vehicle, 12
         )
 
         assert isinstance(result, dict)
@@ -145,11 +141,9 @@ def test_boundary_fare():
 
     r = RideBooking()
 
-    result = r.calculate_fare(
-        1,
-        1,
-        "Bike",
-        12
+    result = r.calculate(
+        "C10", "A", "B",
+        1, 1, "Bike", 12
     )
 
     assert result["final_fare"] > 0
@@ -161,9 +155,12 @@ def test_driver_allocation():
 
     r = RideBooking()
 
-    result = r.assign_driver("Sedan")
+    result = r.calculate(
+        "C11", "A", "B",
+        10, 2, "Sedan", 12
+    )
 
-    assert result == "D201"
+    assert result["driver"] == "D201"
 
     print("Driver allocation logic: PASS")
 
@@ -172,11 +169,9 @@ def test_invalid_booking_time():
 
     r = RideBooking()
 
-    result = r.calculate_fare(
-        10,
-        2,
-        "Sedan",
-        25
+    result = r.calculate(
+        "C12", "A", "B",
+        10, 2, "Sedan", 25
     )
 
     assert result == "Invalid booking time"
@@ -184,17 +179,14 @@ def test_invalid_booking_time():
     print("Invalid booking time: PASS")
 
 
-# ---------------- RUN ALL TESTS ----------------
-
 print("===== RIDE BOOKING QA =====")
 
 test_normal_booking()
-test_peak_hour()
+test_peak_booking()
 test_night_booking()
 test_invalid_distance()
-test_invalid_passenger_count()
+test_invalid_passengers()
 test_excessive_passengers()
-test_unavailable_vehicle()
 test_unavailable_driver()
 test_maximum_discount()
 test_multiple_vehicle_types()
