@@ -23,6 +23,7 @@ class RideBooking:
         }
     }
 
+    DISCOUNT_RATE = 0.10
     MAX_DISCOUNT = 20
 
     def __init__(self):
@@ -33,13 +34,8 @@ class RideBooking:
             "Premium": ["D401"]
         }
 
-    # Validate booking
-    def validate_booking(
-            self,
-            distance,
-            passengers,
-            vehicle,
-            booking_time):
+    def validate(self, distance, passengers,
+                 vehicle, booking_time):
 
         if distance <= 0:
             return "Invalid distance"
@@ -50,10 +46,7 @@ class RideBooking:
         if passengers <= 0:
             return "Invalid passenger count"
 
-        max_passengers = \
-            self.VEHICLES[vehicle]["max_passengers"]
-
-        if passengers > max_passengers:
+        if passengers > self.VEHICLES[vehicle]["max_passengers"]:
             return "Excessive passengers"
 
         if booking_time < 0 or booking_time > 23:
@@ -61,122 +54,68 @@ class RideBooking:
 
         return "Valid"
 
-    # Base fare
-    def base_fare(self, vehicle):
-        return self.VEHICLES[vehicle]["base"]
+    def calculate(self, customer_id, pickup, drop,
+                  distance, passengers, vehicle,
+                  booking_time, driver_available=True):
 
-    # Distance fare
-    def distance_fare(self, vehicle, distance):
-        return self.VEHICLES[vehicle]["per_km"] * distance
+        result = self.validate(
+            distance,
+            passengers,
+            vehicle,
+            booking_time
+        )
 
-    # Peak-hour surcharge
-    def peak_surcharge(self, fare, booking_time):
+        if result != "Valid":
+            return result
 
+        if not driver_available:
+            return "Driver unavailable"
+
+        base = self.VEHICLES[vehicle]["base"]
+
+        distance_fare = (
+            self.VEHICLES[vehicle]["per_km"]
+            * distance
+        )
+
+        fare = base + distance_fare
+
+        # Peak hour: 7-10 and 17-20
         if 7 <= booking_time <= 10 or \
            17 <= booking_time <= 20:
+            peak = fare * 0.20
+        else:
+            peak = 0
 
-            return fare * 0.20
-
-        return 0
-
-    # Night surcharge
-    def night_surcharge(self, fare, booking_time):
-
+        # Night: 22-23 and 0-5
         if booking_time >= 22 or booking_time < 6:
-            return fare * 0.10
+            night = fare * 0.10
+        else:
+            night = 0
 
-        return 0
-
-    # Passenger surcharge
-    def passenger_surcharge(
-            self,
-            passengers):
-
+        # Passenger surcharge
         if passengers > 2:
-            return (passengers - 2) * 20
+            passenger = (passengers - 2) * 20
+        else:
+            passenger = 0
 
-        return 0
+        total = fare + peak + night + passenger
 
-    # Promotional discount
-    def promotional_discount(self, fare):
-
-        discount = fare * 0.10
+        discount = total * self.DISCOUNT_RATE
 
         if discount > self.MAX_DISCOUNT:
             discount = self.MAX_DISCOUNT
 
-        return discount
+        final_fare = total - discount
 
-    # Driver assignment
-    def assign_driver(self, vehicle):
-
-        if vehicle not in self.drivers:
-            return None
-
-        if len(self.drivers[vehicle]) == 0:
-            return None
-
-        return self.drivers[vehicle][0]
-
-    # Complete fare calculation
-    def calculate_fare(
-            self,
-            distance,
-            passengers,
-            vehicle,
-            booking_time):
-
-        validation = self.validate_booking(
-            distance,
-            passengers,
-            vehicle,
-            booking_time
-        )
-
-        if validation != "Valid":
-            return validation
-
-        base = self.base_fare(vehicle)
-
-        distance_cost = self.distance_fare(
-            vehicle,
-            distance
-        )
-
-        fare = base + distance_cost
-
-        peak = self.peak_surcharge(
-            fare,
-            booking_time
-        )
-
-        night = self.night_surcharge(
-            fare,
-            booking_time
-        )
-
-        passenger = self.passenger_surcharge(
-            passengers
-        )
-
-        before_discount = \
-            fare + peak + night + passenger
-
-        discount = self.promotional_discount(
-            before_discount
-        )
-
-        final_fare = \
-            before_discount - discount
-
-        driver = self.assign_driver(vehicle)
-
-        if driver is None:
-            return "Driver unavailable"
+        driver = self.drivers[vehicle][0]
 
         return {
+            "customer_id": customer_id,
+            "pickup": pickup,
+            "drop": drop,
             "base_fare": base,
-            "distance_fare": distance_cost,
+            "distance_fare": distance_fare,
             "peak_surcharge": peak,
             "night_surcharge": night,
             "passenger_surcharge": passenger,
@@ -186,71 +125,19 @@ class RideBooking:
         }
 
 
-# ---------------- MAIN PROGRAM ----------------
+# Automatic demonstration data
+if __name__ == "__main__":
 
-ride = RideBooking()
+    ride = RideBooking()
 
-print("===== RIDE BOOKING =====")
+    result = ride.calculate(
+        "C101",
+        "Vellore",
+        "Katpadi",
+        10,
+        2,
+        "Sedan",
+        12
+    )
 
-customer = input("Customer ID: ")
-pickup = input("Pickup location: ")
-drop = input("Drop location: ")
-
-distance = float(input("Distance (km): "))
-passengers = int(input("Number of passengers: "))
-
-print("\nVehicle Types:")
-print("Bike")
-print("Sedan")
-print("SUV")
-print("Premium")
-
-vehicle = input("Vehicle type: ")
-
-booking_time = int(
-    input("Booking time (0-23): ")
-)
-
-result = ride.calculate_fare(
-    distance,
-    passengers,
-    vehicle,
-    booking_time
-)
-
-if isinstance(result, str):
-
-    print("\nBooking rejected:", result)
-
-else:
-
-    print("\n===== RIDE DETAILS =====")
-
-    print("Customer ID:", customer)
-    print("Pickup:", pickup)
-    print("Drop:", drop)
-    print("Vehicle:", vehicle)
-
-    print("Base fare:",
-          result["base_fare"])
-
-    print("Distance fare:",
-          result["distance_fare"])
-
-    print("Peak surcharge:",
-          result["peak_surcharge"])
-
-    print("Night surcharge:",
-          result["night_surcharge"])
-
-    print("Passenger surcharge:",
-          result["passenger_surcharge"])
-
-    print("Promotional discount:",
-          result["promotional_discount"])
-
-    print("Final fare:",
-          round(result["final_fare"], 2))
-
-    print("Driver assigned:",
-          result["driver"])
+    print(result)
