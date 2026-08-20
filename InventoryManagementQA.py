@@ -8,7 +8,9 @@ def test_stock_availability():
 
     inv.add_product("A", "Laptop", 10)
 
-    assert inv.get_stock("A", "Laptop") == 10
+    assert inv.get_stock(
+        "A", "Laptop"
+    ) == 10
 
     print("Stock availability: PASS")
 
@@ -38,12 +40,15 @@ def test_warehouse_transfer():
         "Laptop", 4, "A", "B"
     )
 
-    assert result == \
-        "Stock transferred successfully"
+    assert result == "Stock transferred"
 
-    assert inv.get_stock("A", "Laptop") == 6
+    assert inv.get_stock(
+        "A", "Laptop"
+    ) == 6
 
-    assert inv.get_stock("B", "Laptop") == 4
+    assert inv.get_stock(
+        "B", "Laptop"
+    ) == 4
 
     print("Warehouse transfer: PASS")
 
@@ -76,7 +81,9 @@ def test_concurrent_orders():
     for t in threads:
         t.join()
 
-    assert inv.get_stock("A", "Laptop") == 5
+    assert inv.get_stock(
+        "A", "Laptop"
+    ) == 5
 
     print("Concurrent orders: PASS")
 
@@ -91,10 +98,11 @@ def test_reorder_threshold():
         "A", "Laptop"
     )
 
-    assert result == \
-        "Stock reordered successfully"
+    assert result == "Reorder successful"
 
-    assert inv.get_stock("A", "Laptop") == 15
+    assert inv.get_stock(
+        "A", "Laptop"
+    ) == 15
 
     print("Reorder threshold: PASS")
 
@@ -104,7 +112,7 @@ def test_invalid_product():
     inv = InventoryManagement()
 
     result = inv.remove_product(
-        "A", "Mobile", 2
+        "A", "Tablet", 2
     )
 
     assert result == "Invalid product"
@@ -119,14 +127,16 @@ def test_negative_inventory():
     inv.add_product("A", "Laptop", 5)
 
     result = inv.remove_product(
-        "A", "Laptop", 10
+        "A", "Laptop", 6
     )
 
     assert result == "Insufficient inventory"
 
-    assert inv.get_stock("A", "Laptop") >= 0
+    assert inv.get_stock(
+        "A", "Laptop"
+    ) >= 0
 
-    print("Negative inventory prevention: PASS")
+    print("Negative inventory: PASS")
 
 
 def test_multiple_warehouses():
@@ -146,6 +156,25 @@ def test_multiple_warehouses():
     print("Multiple warehouses: PASS")
 
 
+# Additional development requirements
+
+def test_supplier_management():
+
+    inv = InventoryManagement()
+
+    result = inv.add_supplier(
+        "ABC Supplier", "Laptop"
+    )
+
+    assert result == "Supplier added"
+
+    assert inv.get_supplier(
+        "Laptop"
+    ) == "ABC Supplier"
+
+    print("Supplier management: PASS")
+
+
 def test_low_stock():
 
     inv = InventoryManagement()
@@ -159,25 +188,7 @@ def test_low_stock():
     print("Low-stock detection: PASS")
 
 
-def test_supplier_management():
-
-    inv = InventoryManagement()
-
-    result = inv.add_supplier(
-        "ABC Suppliers",
-        "Laptop"
-    )
-
-    assert result == \
-        "Supplier added successfully"
-
-    assert inv.get_supplier("Laptop") == \
-        "ABC Suppliers"
-
-    print("Supplier management: PASS")
-
-
-def test_automatic_warehouse_selection():
+def test_warehouse_selection():
 
     inv = InventoryManagement()
 
@@ -185,18 +196,16 @@ def test_automatic_warehouse_selection():
     inv.add_product("B", "Laptop", 10)
     inv.add_product("C", "Laptop", 20)
 
-    warehouse = inv.select_warehouse(
+    result = inv.select_warehouse(
         "Laptop", 8
     )
 
-    assert warehouse == "B"
+    assert result == "B"
 
     print("Automatic warehouse selection: PASS")
 
 
-# ---------------- RUN ALL TESTS ----------------
-
-print("===== INVENTORY QA TESTING =====")
+print("===== INVENTORY QA =====")
 
 test_stock_availability()
 test_insufficient_inventory()
@@ -206,10 +215,8 @@ test_reorder_threshold()
 test_invalid_product()
 test_negative_inventory()
 test_multiple_warehouses()
-
-# Additional development requirements
-test_low_stock()
 test_supplier_management()
-test_automatic_warehouse_selection()
+test_low_stock()
+test_warehouse_selection()
 
 print("\nALL INVENTORY TESTS PASSED")
